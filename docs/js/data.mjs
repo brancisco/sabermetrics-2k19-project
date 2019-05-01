@@ -1,6 +1,6 @@
-import pData from '../data/pitchers.js'
-import bData from '../data/batters.js'
-import pmData from '../data/player-map.js'
+import pData from '../data/pitchers-2018.mjs'
+import bData from '../data/batters-2018.mjs'
+import pmData from '../data/player-map-2018.mjs'
 
 export const pitchers = pData
 export const batters = bData

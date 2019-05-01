@@ -2,10 +2,14 @@
 <html>
 <head>
   <title>AWPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="./style/main.css" rel="stylesheet" type="text/css">
   <link href="./style/search-bar.css" rel="stylesheet" type="text/css">
+  <link href="./style/player-chart.css" rel="stylesheet" type="text/css">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript" src="./js/search-bar.js"></script>
+  <script type="text/javascript" src="./js/player-chart.js"></script>
   <script type='module'>
     import { pitchers, batters, playerMap } from './js/data.mjs';
     import { simpleMovingAvg } from './js/helpers.mjs';
@@ -14,15 +18,16 @@
     window.playerMap = playerMap
     window.simpleMovingAvg = simpleMovingAvg
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-
-  <h1>Aguirre's Wager Point System</h1>
+  <h1>Sabermetrics: Aguirre's Wager Point System</h1>
+  <div>
+    <p>Search any player who played in <strong>2018</strong> below</p>
+  </div>
   <div id=search_component_wrap>
     <div id="search_component" class="empty">
       <input id="search_input" placeholder="search player name here"
-        onfocus="searchFocusIn()" onblur="setTimeout(function(){searchFocusOut()}, 200)" onkeyup="displayPlayers()" >
+        onfocus="searchFocusIn()" onblur="setTimeout(function() { searchFocusOut() }, 200)" onkeyup="displayPlayers()" >
       <div id="search_icon"><i class="fas fa-search"></i></div>
       <hr id="search_sep">
       <div>
@@ -31,126 +36,6 @@
     </div>
   </div>
   <br>
-  <div id="curve_chart" style="width: 900px; max-width: 100%; height: 500px"></div>
-  <script type="text/javascript">
-    var chart
-    google.charts.load('current', {'packages':['corechart']})
-    // google.charts.load('current', {'packages':['scatter']})
-
-    function drawChart(player) {
-      let pdata;
-      let rows = []
-      let mlbid = playerMap[player]
-
-      if (pitchers[mlbid]) {
-        pdata = pitchers[mlbid]
-      }
-      else if (batters[mlbid]) {
-        pdata = batters[mlbid]
-      }
-
-      if (pdata) {
-        let avgData = simpleMovingAvg(pdata, 1, 15)
-
-        let data = new google.visualization.DataTable()
-        data.addColumn('number', 'Event')
-        data.addColumn('number', 'Ranking')
-        data.addColumn({'type': 'string', 'role': 'tooltip'})
-        data.addColumn({'type': 'string', 'role': 'style'})
-        data.addColumn('number', 'Avg Ranking')
-        data.addRows(pdata.length)
-        
-        for (let i = 0; i < pdata.length; i ++) {
-          for (let j = 0; j < 4; j ++) {
-            data.setCell(i, j, pdata[i][j])
-          }
-          data.setCell(i, 4, avgData[i])
-        }
-        
-        let options = {
-          title: `${player} Points Season 2018`,
-          legend: { position: 'bottom' },
-          seriesType: 'scatter',
-          vAxis: {title: 'Ranking'},
-          hAxis: {title: 'Event #'},
-          series: {
-            0: { label: 'Redfkj' },
-            1: {
-              type: 'line',
-              color: '#a537fd',
-              lineWidth: 3
-            }
-          }
-        }
-
-        // chart = new google.charts.Scatter(document.getElementById('curve_chart'))
-        // chart = new google.visualization.ScatterChart(document.getElementById('curve_chart'))
-        // chart.draw(data, options)
-
-        chart = new google.visualization.ComboChart(document.getElementById('curve_chart'))
-        chart.draw(data, options)
-      }
-    }
-
-    function searchKeys (pattern, obj) {
-      if (pattern.length <= 2) {
-        return []
-      }
-      let matches = []
-      let re = new RegExp(pattern, 'i')
-      for (let key of Object.keys(obj)) {
-        if (re.test(key)) {
-          matches.push(key)
-        }
-      }
-      return matches
-    }
-
-    function displayPlayers () {
-      let input = document.getElementById('search_input').value
-      let result = searchKeys(input, playerMap)
-      let list = document.getElementById('player_list')
-      if (result.length > 0) {
-        document.getElementById('search_component').classList.remove('empty')
-        while (list.firstChild) {
-          list.removeChild(list.firstChild);
-        }
-        for (let i in result) {
-          let li = document.createElement('li')
-          li.classList.add('list-result-wrap')
-          li.onclick = () => { setInput(result[i]); drawChart(result[i]) }
-          let div = document.createElement('div')
-          div.classList.add('list-result')
-          let t = document.createTextNode(result[i])
-          div.appendChild(t)
-          li.appendChild(div)
-          list.appendChild(li)
-          if (i == result.length - 1) {
-            li.classList.add('last-result')
-          }
-        }
-      }
-      else if (list.firstChild) {
-        while (list.firstChild) {
-          list.removeChild(list.firstChild);
-          document.getElementById('search_component').classList.add('empty')
-        }
-      }
-      else {
-        document.getElementById('search_component').classList.add('empty')
-      }
-    }
-
-    function setInput (value) {
-      document.getElementById('search_input').value = value
-    }
-
-    function searchFocusIn () {
-      document.getElementById('search_component').classList.add('active')
-    }
-    function searchFocusOut () {
-      document.getElementById('search_component').classList.remove('active')
-    }
-  </script>
+  <div id="curve_chart"></div>
 </body>
 </html>
