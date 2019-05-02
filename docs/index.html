@@ -6,6 +6,7 @@
   <link href="./style/main.css" rel="stylesheet" type="text/css">
   <link href="./style/search-bar.css" rel="stylesheet" type="text/css">
   <link href="./style/player-chart.css" rel="stylesheet" type="text/css">
+  <link href="./vendor/css/prism.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script type="text/javascript" src="./js/search-bar.js"></script>
@@ -20,22 +21,260 @@
   </script>
 </head>
 <body>
-  <h1>Sabermetrics: Aguirre's Wager Point System</h1>
-  <div>
-    <p>Search any player who played in <strong>2018</strong> below</p>
+  <div class="text-content center">
+    <h1>Sabermetrics: Aguirre's Wager Point System</h1>
+    <h4>By: Brandon Aguirre <small>(Spring 2019)</small></h4>
   </div>
-  <div id=search_component_wrap>
-    <div id="search_component" class="empty">
-      <input id="search_input" placeholder="search player name here"
-        onfocus="searchFocusIn()" onblur="setTimeout(function() { searchFocusOut() }, 200)" onkeyup="displayPlayers()" >
-      <div id="search_icon"><i class="fas fa-search"></i></div>
-      <hr id="search_sep">
-      <div>
-        <ul id="player_list"></ul>
-      </div>
+  <div class='btn-container'>
+    <button onclick='pageButtonHandler(this)' id='show_app_button' class='btn primary large floated'>AWPS 2018 Viewer</button>
+    <button onclick='pageButtonHandler(this)' id='show_about_button' class='btn primary large floated inactive'>AWPS About</button>
+  </div>
+  <div id="about" class="hide-time">
+    <figure>
+      <img class='png' src='./img/BestBattersVsAll.png'>
+      <figcaption><strong>Figure 1.</strong> AWPS rating highlighting the top 5 best batters (according to <a target='_blank' href='https://www.fangraphs.com/'>fangraphs.com</a>) plotted against all other players in the MLB.</figcaption>
+    </figure>
+    <div class="text-content">
+      <h2>What is AWPS?</h2>
+      <p>AWPS is a closed point rating system that I have created and implemented for my Sabermetrics class. I define a “closed point” rating system to be a rating system that distributes a finite number of points to all players in the MLB. These points will be transferred between pitchers and batters each time a pitcher and batter face off.</p>
+      <p>I was inspired to create AWPS by the Hungarian-American physicist Arpad Elo who invented the <a target='_blank' href='https://en.wikipedia.org/wiki/Elo_rating_system'>Elo Rating System</a>. His system was used to rate chess players based on their relative skill levels. The Elo Rating System was a bit simpler to implement because the points were transferred between two players who played the same position (both are chess players). The point system I have implemented transfers points between two players who play different positions - pitcher and batter - and will have to take into account different events.</p>
+
+      <h2>What does AWPS measure?</h2>
+      <p>The goal of AWPS is to measure how well a player is performing, at batting or pitching, compared to all other players. Similar metrics might be something like Batting Average or Slugging % for batters, and Strikeout % for pitchers. While those metrics are good for measuring the overall performance of a player throughout their career, AWPS is more sensitive to recent activity from a player.</p>
+
+      <p>For example say that a player has a small injury, or something going on in their personal lives that is affecting their game. They might have a local minimum in their performance compared to the rest of their career. AWPS is great for this, because the more events a player loses, the larger the amount of points they lose.</p>
+
+      <p>What constitutes a loss?</p>
+      <ul>
+        <li>For a batter, a loss is getting struck out.</li>
+        <li>For a pitcher a loss is allowing a hit, or home run.</li>
+      </ul>
+
+      <p>An example of this sensitivity is Brandon Belt. While he was performing well at the start of 2018, unfortunately he <a target='_blank' href='http://www.espn.com/mlb/story/_/id/23678728/brandon-belt-san-francisco-giants-had-appendectomy'>underwent an appendectomy</a> in June, 2018. He also suffered a knee injury later in the season. Examining Brandon Belts AWPS score, it seems obvious he had some issues throughout his season.</p>
+
+      <figure>
+        <img class='png' src='./img/BrandonBelt2018.png'/>
+        <figcaption><strong>Figure 2.</strong> Brandon Belt's AWPS score for 2018.</figcaption>
+      </figure>
+
+      <h2>What are the benefits of using AWPS?</h2>
+      
+      <p>There are two major benefits to using AWPS over other statistics like BA, SLG%, K%, etc..</p>
+
+      <ol>
+        <li>The sensitivity I mentioned in the previous section.</li>
+        <li>AWPS weights each face-off between two players based on their current points.</li>
+      </ol>
+
+      <p>Since I mentioned how the sensitivity of AWPS is great for watching trends for players, I’ll just cover the second point here. AWPS doesn’t see things so black and white. For example a hit isn’t the same as any other hit… and a home run isn’t just any old home run. If a lower ranked batter gets a hit on a high ranked pitcher, they will gain more points than playing someone their own rating. The same goes for the opposite case. A player who has a lot of points isn’t going to gain much from getting hits against a low ranked player. This allows for AWPS to adjust a players points more accurately than trying to quantify how good a player is based on the information from just how many hits or home runs they got. The same goes for pitchers.</p>
+
+      <h2>How do you calculate AWPS?</h2>
+      <p>AWPS is a statistic that needs to be calculated sequentially. Each exchange in points between two players is dependent upon all of the interactions each of those players had before.</p>
+
+      <h3>The Algorithm</h3>
+
+      <p>The general algorithm for calculating AWPS is as follows</p>
+
+      <ol>
+        <li>Calculate probabilities of events from a previous season (theoretically these probabilities are changing constantly)</li>
+        <li>Initialize all batters and pitchers with a array containing an initial value</li>
+        <li>For each event between a batter and a pitcher
+          <ul>
+            <li>Get the batter and pitchers most recent score</li>
+            <li>Calculate how much each player should wager based relatively on their latest scores</li>
+            <li>Multiply their wager by a factor K (K depends on their scores, independant of the other players score)</li>
+            <li>Multiply their weighted wager by the probability of the current event (hit, home run, strikeout)</li>
+            <li>Depending on who wins and loses, add and subtract points respectively</li>
+            <li>Append this new score to each players array of scores</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>The wager function</h3>
+
+      <p>The wager function is essentially a logistic curve. This function was used in the original <a target='_blank' href='https://en.wikipedia.org/wiki/Elo_rating_system#Mathematical_details'>Elo calculations</a>. It was chosen such that the difference in scores for two different players would decide their respective expected score outcomes.</p>
+
+      <pre><code class="language-python">
+def wager(p, b, k):
+  """
+  Calculates the points a pitcher, and a batter should wager on a given event
+  @param p float: score of pitcher
+  @param b float: score of batter
+  @param k int: wager factor, weights how much players should wager
+  @return touple (float, float): (pitchers wager, batters wager)
+  """
+  ep = (10**(p/400))/((10**(p/400)) + (10**(b/400)))
+  eb = 1-ep
+  return (round(k(p)*ep, 3), round(k(b)*eb, 3))
+      </code></pre>
+
+      <h3>The K factor</h3>
+
+      <p>The K factor is suggested to be many different values by <a target='_blank' href='https://en.wikipedia.org/wiki/Elo_rating_system#Most_accurate_K-factor'>different organizations</a> in the chess community. They usually base it on some logistic scale, and then stagger the K factor into (usually three) different set points.</p>
+
+      <p>Rather than using differnt set points to change the K factor, I decided to come up with a function that would adjust the K factor for every possible point. Below is the function I used to calculate the K factor.</p>
+
+      <pre><code class="language-python">
+def k_function(p):
+  """
+  @param p float which is the number of points a player has
+  @ return float which is the k multiplier for how much a player should wager
+  """
+  res = np.exp(3600/(p))
+  if res >= 20:
+    return 20*2
+  elif res <= 10:
+    return 10*2
+  else:
+    return res*2
+      </code></pre>
+
+      <p>I designed this function to resemble an exponential curve that lined up close with suggested values from <a target='_blank' href='https://www.fide.com/index.php'>FIDE</a>.</p>
+
+      <figure>
+        <img class='png' src='./img/KFactor.png'>
+        <figcaption><strong>Figure 3.</strong> K factor function calculated with the above code.</figcaption>
+      </figure>
+
+      <h3>The event probabilities</h3>
+
+      <p>Calculating the probabilities for an event is straight forward for my initial AWPS scoring. However, the probability of these events changes every time batters and pitchers face off. If AWPS was used in practice, it would be optimal to use some type of weighted average function to calculate average probabilities over some time period.</p>
+
+      <pre><code class="language-python">
+def get_proba_function(df):
+  """
+  Create a function which produces the probability of: a hit (excluding homerun), homerun, and strike
+  @param df pandas.DataFrame which has a years seasons worth of statcast data
+  @return a function which takes in an event (h, hr, k), and returns a probability of the event
+  """
+  n_1b = len(df.loc[df.events == 'single'])
+  n_2b = len(df.loc[df.events == 'double'])
+  n_3b = len(df.loc[df.events == 'triple'])
+  n_hr = len(df.loc[df.events == 'home_run'])
+  n_so = len(df.loc[df.events == 'strikeout'])
+  emap = { 'h': n_1b + n_2b + n_3b, 'hr': n_hr, 'k': n_so }
+  return lambda e: emap[e] / sum(list(emap.values()))
+      </code></pre>
+
+      <h2>Okay, so does AWPS really work?</h2>
+      <p>With my current algorithm and calculations, AWPS does seem to be working! However, there is definitely a lot of room for improvement, and many ways this could be expanded. Below I’ll show some graphs that indicate AWPS is doing what it is supposed to.</p>
+
+      <h3>Distributing the points to players throught a season</h3>
+
+      <p>After running  the algorithm on all of the Statcast data from 2017 and 2018, I wanted to see how the points were distributed between pitchers and batters.</p>
+
+      <p>Distributing points evenly between pitchers and batters. was challenging for two main reasons:</p>
+
+      <ol>
+        <li>There are many more batters than there are pitchers.</li>
+        <li>Pitchers and batters are doing two fundamentally different things, so dividing the points evenly requires more than just a win or a loss (we need to answer the question “How much did they win by?”).</li>
+      </ol>
+
+      <figure>
+        <img class='png' src='./img/PointsDistributed2017.png'>
+        <figcaption><strong>Figure 4.</strong> Some observations above: There are relatively more pitchers who cross the 1500 points baseline. There are more batters who have a higher number of points. There are more pitchers with a the lowest number of points.</figcaption>
+      </figure>
+
+      <figure>
+        <img class='png' src='./img/PointsDistributed2018.png'>
+        <figcaption><strong>Figure 5.</strong> The 2018 data has a very similar distribution as the 2017 data which is expected. It is interesting though that the tails seem to line up more for the 2018 data.</figcaption>
+      </figure>
+
+      <p>With some more effort, I think there should be a way to assign points that creates a distribution where the pitchers and batters line up more. Although it could just be the nature of batting vs pitching.</p>
+
+      <h3>Comparing AWPS ratings to fangraph ratings</h3>
+
+      <p>In Figure 1. I showed the AWPS rating for the top 5 batters according to fangraphs 2018 leaderboard. The players are clearly amongst the very top rated out of all of the players in the AWPS system. Below is a graph of the AWPS  scores of the top 5 rated pitchers by fangraphs.</p>
+
+      <figure>
+        <img class='png' src='./img/BestPitchersVsAll.png'>
+        <figcaption><strong>Figure 6.</strong> AWPS rating highlighting the top 5 best batters (according to <a target='_blank' href='https://www.fangraphs.com/'>fangraphs.com</a>) plotted against all other players in the MLB.</figcaption>
+      </figure>
+
+      <p>I am pretty happy with these results, as the top ranked pitchers and batters are pretty consistent with fangraphs ratings!</p>
+
+      <h2>Issues with AWPS</h2>
+
+      <h3>Stale players</h3>
+
+      <p>But what happens when players get injured and stop playing?! What happens when players retire!? What happens when players are mostly on the bench?!</p>
+
+      <p>Further work in developing the AWPS algorithm is definitely needed to make it a more viable stat no doubt. One solution could be to monitor inactivity between playing. If a player is taking a break or their face-off frequency drops, some of their points could be deducted and thrown into a "pool" of sorts. Those points could be distributed to other players who are staying more active.</p>
+
+      <h3>Many other events besides just hits, home runs, and strikeouts</h3>
+
+      <p>Some pitchers have many more BB than others. Some batters get on base from their hits more often. Some batters are clutch in situatins like when the bases are loaded.</p>
+
+      <p>Adding in more events makes the probability calculations a lot more complex. However, taking into account more of these stats could make AWPS much more robust.</p>
+
+      <h2>Don't forget!</h2>
+
+      <p><a href="javascript:location.hash='#/player-search'; location.reload();">Check out your favorite player's AWPS score here!</a></p>
     </div>
   </div>
-  <br>
-  <div id="curve_chart"></div>
+  <div id="app" class="show-time">
+    <div>
+      <p>Search any player who played in <strong>2018</strong> below</p>
+    </div>
+    <div id=search_component_wrap>
+      <div id="search_component" class="empty">
+        <input id="search_input" placeholder="search player name here"
+          onfocus="searchFocusIn()" onblur="setTimeout(function() { searchFocusOut() }, 200)" onkeyup="displayPlayers()" >
+        <div id="search_icon"><i class="fas fa-search"></i></div>
+        <hr id="search_sep">
+        <div>
+          <ul id="player_list"></ul>
+        </div>
+      </div>
+    </div>
+    <br>
+    <div id="curve_chart"></div>
+  </div>
+  <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+      let hash = window.location.hash
+      if (window.location.hash == '#/about') {
+        pageButtonHandler(document.getElementById('show_about_button'))
+      }
+      if (window.location.hash == '#/player-search') {
+        pageButtonHandler(document.getElementById('show_app_button'))
+      } 
+      hashRouter(decodeURIComponent(hash))
+    })
+
+    function hashRouter (hash) {
+      let hash_arr = hash.split('/')
+      if (hash_arr[0] !== '#') {
+        return -1
+      }
+      if (hash_arr[1] === 'player-search') {
+        if (hash_arr.length > 2) {
+          setInput(hash_arr[2])
+          displayPlayers()
+        }
+      }
+    }
+
+    function pageButtonHandler (el) {
+      el.classList.remove('inactive')
+      if(el.id == 'show_app_button') {
+        document.getElementById('show_about_button').classList.add('inactive')
+        document.getElementById('about').classList.add('hide-time')
+        document.getElementById('about').classList.remove('show-time')
+        document.getElementById('app').classList.remove('hide-time')
+        document.getElementById('app').classList.add('show-time')
+        window.location.hash = '#/player-search'
+      }
+      else {
+        document.getElementById('show_app_button').classList.add('inactive')
+        document.getElementById('app').classList.add('hide-time')
+        document.getElementById('app').classList.remove('show-time')
+        document.getElementById('about').classList.add('show-time')
+        document.getElementById('about').classList.remove('hide-time')
+        window.location.hash = '#/about'
+      }
+    }
+  </script>
+  <script src="./vendor/js/prism.js"></script>
 </body>
 </html>

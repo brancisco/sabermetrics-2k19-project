@@ -24,7 +24,7 @@ function displayPlayers () {
     for (let i in result) {
       let li = document.createElement('li')
       li.classList.add('list-result-wrap')
-      li.onclick = () => { setInput(result[i][1]); drawChart(result[i][0]) }
+      li.onclick = () => { setInput(result[i][1]); drawChart(result[i][0]); setHashLocation(['player-search', result[i][1]]) }
       let div = document.createElement('div')
       div.classList.add('list-result')
       let t = document.createTextNode(`${result[i][1]}: ${result[i][0]}`)
@@ -34,6 +34,10 @@ function displayPlayers () {
       if (i == result.length - 1) {
         li.classList.add('last-result')
       }
+    }
+    if (result.length === 1) {
+      console.log('hello')
+      drawChart(result[0][0])
     }
   }
   else if (list.firstChild) {
@@ -50,9 +54,14 @@ function displayPlayers () {
 function setInput (value) {
   document.getElementById('search_input').value = value
 }
+
 function searchFocusIn () {
   document.getElementById('search_component').classList.add('active')
 }
 function searchFocusOut () {
   document.getElementById('search_component').classList.remove('active')
+}
+
+function setHashLocation(location) {
+  window.location.hash = location.reduce((acc, cur) => acc.concat('/', encodeURIComponent(cur)), '#')
 }
