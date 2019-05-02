@@ -34,34 +34,6 @@ def export_mjs_module(outfile, data):
   with open(outfile, 'w') as file:
     file.write(out)
 
-def get_player_map(unique_ids, infile):
-  # needs to remove players who did not play in 2018
-  df = pd.read_csv(infile, encoding='latin-1')
-  player_map = {}
-
-  for row in df.iterrows():
-    row = row[1]
-    mlb_id = int(float(row.mlb_id))
-    if mlb_id in unique_ids:
-      player_map[mlb_id] = row.mlb_name
-
-  class PMap:
-    def __init__(self, pm):
-      self.map = pm
-    def get(self, pid):
-      if pid in self.map:
-        return self.map[pid]
-      else:
-        return str(pid)
-    def getadd(self, pid):
-      if pid in self.map:
-        return self.map[pid]
-      else:
-        self.map[pid] = str(pid)
-        return str(pid)
-
-  return PMap(player_map)
-
 def create_player_data(data_folder, out_folder, year):
   print('loading data...')
   data = get_statcast_data(data_folder, year)
