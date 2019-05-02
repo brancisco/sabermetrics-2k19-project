@@ -6,8 +6,6 @@
 
 ---
 
-## Description
-
 # AWPS - Aguirre's Wager Point System
 
 ## Description & Inspiration
