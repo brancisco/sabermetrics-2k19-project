@@ -1,5 +1,4 @@
-var chart
-google.charts.load('current', {'packages':['corechart']})
+var chart;
 
 function drawChart(mlbid) {
   let pdata;

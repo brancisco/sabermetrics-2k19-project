@@ -36,7 +36,6 @@ function displayPlayers () {
       }
     }
     if (result.length === 1) {
-      console.log('hello')
       drawChart(result[0][0])
     }
   }
@@ -60,8 +59,4 @@ function searchFocusIn () {
 }
 function searchFocusOut () {
   document.getElementById('search_component').classList.remove('active')
-}
-
-function setHashLocation(location) {
-  window.location.hash = location.reduce((acc, cur) => acc.concat('/', encodeURIComponent(cur)), '#')
 }

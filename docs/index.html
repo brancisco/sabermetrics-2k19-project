@@ -8,7 +8,9 @@
   <link href="./style/player-chart.css" rel="stylesheet" type="text/css">
   <link href="./vendor/css/prism.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript" src="./js/routing.js"></script>
   <script type="text/javascript" src="./js/search-bar.js"></script>
   <script type="text/javascript" src="./js/player-chart.js"></script>
   <script type='module'>
@@ -26,8 +28,8 @@
     <h4>By: Brandon Aguirre <small>(Spring 2019)</small></h4>
   </div>
   <div class='btn-container'>
-    <button onclick='pageButtonHandler(this)' id='show_app_button' class='btn primary large floated'>AWPS 2018 Viewer</button>
-    <button onclick='pageButtonHandler(this)' id='show_about_button' class='btn primary large floated inactive'>AWPS About</button>
+    <button onclick='hashRouter("player-search")' id='show_app_button' class='btn primary large floated'>AWPS 2018 Viewer</button>
+    <button onclick='hashRouter("about")' id='show_about_button' class='btn primary large floated inactive'>AWPS About</button>
   </div>
   <div id="about" class="hide-time">
     <figure>
@@ -209,7 +211,14 @@ def get_proba_function(df):
 
       <h2>Don't forget!</h2>
 
-      <p><a href="javascript:location.hash='#/player-search'; location.reload();">Check out your favorite player's AWPS score here!</a></p>
+      <p><a href="javascript:hashRouter('player-search')">Check out your favorite player's AWPS score here!</a></p>
+      <p>Or try one of these players!</p>
+      <ul>
+        <li><a href="javascript:hashRouter('player-search/Mookie Betts')">Mookie Betts</a></li>
+        <li><a href="javascript:hashRouter('player-search/Jacob deGrom')">Jacob deGrom</a></li>
+        <li><a href="javascript:hashRouter('player-search/Francisco Lindor')">Francisco Lindor</a></li>
+        <li><a href="javascript:hashRouter('player-search/Brandon Belt')">Brandon Belt</a></li>
+      </ul>
     </div>
   </div>
   <div id="app" class="show-time">
@@ -231,49 +240,12 @@ def get_proba_function(df):
     <div id="curve_chart"></div>
   </div>
   <script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']})
     document.addEventListener('DOMContentLoaded', function () {
-      let hash = window.location.hash
-      if (window.location.hash == '#/about') {
-        pageButtonHandler(document.getElementById('show_about_button'))
-      }
-      if (window.location.hash == '#/player-search') {
-        pageButtonHandler(document.getElementById('show_app_button'))
-      } 
-      hashRouter(decodeURIComponent(hash))
+      google.charts.setOnLoadCallback(function () {
+        hashRouter(window.location.hash)
+      });
     })
-
-    function hashRouter (hash) {
-      let hash_arr = hash.split('/')
-      if (hash_arr[0] !== '#') {
-        return -1
-      }
-      if (hash_arr[1] === 'player-search') {
-        if (hash_arr.length > 2) {
-          setInput(hash_arr[2])
-          displayPlayers()
-        }
-      }
-    }
-
-    function pageButtonHandler (el) {
-      el.classList.remove('inactive')
-      if(el.id == 'show_app_button') {
-        document.getElementById('show_about_button').classList.add('inactive')
-        document.getElementById('about').classList.add('hide-time')
-        document.getElementById('about').classList.remove('show-time')
-        document.getElementById('app').classList.remove('hide-time')
-        document.getElementById('app').classList.add('show-time')
-        window.location.hash = '#/player-search'
-      }
-      else {
-        document.getElementById('show_app_button').classList.add('inactive')
-        document.getElementById('app').classList.add('hide-time')
-        document.getElementById('app').classList.remove('show-time')
-        document.getElementById('about').classList.add('show-time')
-        document.getElementById('about').classList.remove('hide-time')
-        window.location.hash = '#/about'
-      }
-    }
   </script>
   <script src="./vendor/js/prism.js"></script>
 </body>
